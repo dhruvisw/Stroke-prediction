@@ -1,0 +1,324 @@
+```         
+---
+title: "Build and deploy a stroke prediction model using R"
+date: "`r Sys.Date()`"
+output: html_document
+author: "Dhruvi Swadia"
+---
+```
+
+# About Data Analysis Report
+
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, summary statistics and building the prediction models. The final report was completed on `r date()`.
+
+**Data Description:**
+
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+
+```{r}
+if(!require('tidyverse')){
+  install.packages('tidyverse')
+  library('tidyverse')}
+```
+
+```{r}
+if(!require('lubridate')){
+  install.packages('lubridate')
+  library('lubridate')
+}
+if(!require('ggplot2')){
+  install.packages('ggplot2')
+  library('ggplot2')
+}
+if(!require('dplyr')){
+  install.packages('dplyr')
+  library('dplyr')
+}
+if(!require('caret')) {
+  install.packages('caret')
+  library('caret')
+}
+if(!require('randomForest')) {
+  install.packages('randomForest')
+  library('randomForest')
+}
+if(!require('skimr')) {
+  install.packages('skimr')
+  library('skimr')
+}
+if(!require('gridExtra')) {
+  install.packages('gridExtra')
+  library('gridExtra')
+}
+if(!require('caTools')) {
+  install.packages('caTools')
+  library('caTools')
+}
+
+```
+
+```{r}
+if(!require('corrplot')) {
+  install.packages('corrplot')
+  library('corrplot')
+}
+if(!require('ggcorrplot')) {
+  install.packages('ggcorrplot')
+  library('ggcorrplot')
+}
+## Loading required package: ggcorrplot
+if(!require('naniar')){
+  install.packages('naniar')
+  library('naniar')
+}
+```
+
+```{r}
+#importing files
+setwd("/Users/dhruviswadia/Desktop/Projects/Stroke prediction-R")
+Data_Stroke <- read.csv('healthcare-dataset-stroke-data.csv')
+```
+
+```{r}
+summary(Data_Stroke)
+```
+
+```{r}
+glimpse(Data_Stroke)
+```
+
+```{r}
+skim(Data_Stroke)
+```
+
+```{r}
+miss_scan_count(data = Data_Stroke, search = list("Unknown","N/A","Other"))
+```
+
+```{r}
+##Convert NA to median in BMI column
+Data_Stroke$bmi <- as.numeric(Data_Stroke$bmi)
+```
+
+```{r}
+idx <- complete.cases(Data_Stroke)
+bmi_idx <- is.na(Data_Stroke$bmi)
+median_bmi <- median(Data_Stroke$bmi, na.rm = TRUE)
+
+Data_Stroke[bmi_idx,]$bmi <- median_bmi
+colSums(is.na(Data_Stroke))
+```
+
+```{r}
+##Check duplicates
+sum(duplicated(Data_Stroke))
+```
+
+```{r}
+Data_Stroke %>% count(gender)
+```
+
+```{r}
+##Remove ID and filter out 'Other' values in Gender
+Data_Stroke <- Data_Stroke %>% 
+  select(-c(id)) %>% 
+  filter(gender != "Other")
+str(Data_Stroke)
+```
+
+```{r}
+##Convert non-numeric variables to factors
+Data_Stroke$stroke <- factor(Data_Stroke$stroke, levels = c(0,1), labels = c("No", "Yes"))
+Data_Stroke$hypertension <- factor(Data_Stroke$hypertension, levels = c(0,1), labels = c("No", "Yes"))
+Data_Stroke$heart_disease <- factor(Data_Stroke$heart_disease, levels = c(0,1), labels = c("No", "Yes"))
+```
+
+```{r}
+#Task 2
+```
+
+```{r}
+d1 <- Data_Stroke %>%
+  ggplot(aes(x = gender, fill = gender)) +
+  geom_bar(fill = c("red", "blue")) +
+  ggtitle("Gender Distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+  
+d2 <- Data_Stroke %>%
+  ggplot(aes(x = hypertension, fill = hypertension)) +
+  geom_bar(fill = c("red", "blue")) +
+  ggtitle("Hypertenstion Distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+  
+
+d3 <- Data_Stroke %>%
+  ggplot(aes(x = heart_disease, fill = heart_disease)) +
+  geom_bar(fill = c("red", "blue")) +
+  ggtitle("Heart Disease Distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+
+d4 <- Data_Stroke %>%
+  ggplot(aes(x = ever_married, fill = ever_married)) +
+  geom_bar(fill = c("red","blue")) +
+  ggtitle("Married distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+
+d5 <- Data_Stroke %>%
+  ggplot(aes(x = work_type, fill = work_type)) +
+  geom_bar(fill = c("red", "blue","green","orange","aquamarine")) +
+  ggtitle("Work type distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+
+d6 <- Data_Stroke %>%
+  ggplot(aes(x = stroke, fill = stroke)) +
+  geom_bar(fill = c("red", "blue")) +
+  ggtitle("Stroke distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+
+d7 <- Data_Stroke %>%
+  ggplot(aes(x = Residence_type, fill = Residence_type)) +
+  geom_bar(fill = c("red", "blue")) +
+  ggtitle("Residence distribution") +
+  geom_text(aes(label=..count..), stat = "Count", vjust = 1.0)
+
+
+grid.arrange(d1,d2,d3,d4,d5,d6,d7, ncol=2)
+```
+
+```{r}
+#different visualizations 
+#Plot Gender Distribution
+Data_Stroke %>%
+  ggplot(aes(x = gender, fill = stroke)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values=c("aquamarine3",
+                             "#FF7FAA")) +
+  ggtitle("Gender vs. Stroke")
+```
+
+```{r}
+#Plot Residence Type Distribution
+Data_Stroke %>%
+  ggplot(aes(x = Residence_type, fill = stroke)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values=c("#8EE5EE",
+                             "#013220")) +
+  ggtitle("Residence type vs. Stroke")
+```
+
+```{r}
+#Plot Smoking Status Distribution
+Data_Stroke %>%
+  ggplot(aes(x = smoking_status, fill = stroke)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values=c("brown3",
+                             "#5BCBE2")) +
+  ggtitle("Smoking status vs. Stroke")
+```
+
+```{r}
+#Plot average glucose level: This R code creates a density plot to visualize the distribution of average glucose levels in the dataset, distinguishing between people who had a stroke and those who did not.
+
+  
+Data_Stroke %>%
+  ggplot(aes(x = avg_glucose_level, fill = stroke)) +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values=c("aquamarine3",
+                             "blueviolet"
+  )) +
+  ggtitle("Average Glucose level vs. Stroke") 
+```
+
+```{r}
+#compare BMI distributions between stroke and non-stroke groups
+Data_Stroke %>% filter(between(bmi, 0, 60)) %>%
+  ggplot(aes(x = bmi, fill = stroke)) +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values=c("aquamarine3",
+                             "#800020"
+  )) +
+  ggtitle("Body Mass Index vs. Stroke")
+```
+
+```{r}
+# Task Three: Evaluate and select prediction models
+```
+
+```{r}
+
+sample.split(Data_Stroke$stroke,SplitRatio = 0.8)->split_tag
+train<-subset(Data_Stroke,split_tag==TRUE)
+test<-subset(Data_Stroke,split_tag==FALSE)
+dim(train)
+```
+
+```{r}
+dim(test)
+```
+
+```{r}
+#Task 4 Deploy the prediction model
+
+```
+
+```{r}
+set.seed(123)
+rf <- randomForest(formula = stroke~.,data = train)
+rf
+```
+
+```{r}
+plot(rf)
+```
+
+```{r}
+# Generate predictions using the random forest model on the test set
+predictions <- predict(rf, test)
+
+# Compute the confusion matrix
+conf_matrix <- confusionMatrix(predictions, test$stroke)
+print(conf_matrix)
+```
+
+```{r}
+# Convert the confusion matrix to a data frame for ggplot
+conf_matrix_df <- as.data.frame(as.table(conf_matrix))
+colnames(conf_matrix_df) <- c("Predicted", "Actual", "Count")
+# Check the content of the confusion matrix to ensure it has the right data
+print(head(conf_matrix_df))  # Debugging step
+
+```
+
+```{r}
+# Create a custom color map for each combination of Actual vs Predicted using "Yes" and "No"
+color_map <- c("No.No" = "violet",   # Actual=No, Predicted=No
+               "No.Yes" = "orange",  # Actual=No, Predicted=Yes
+               "Yes.No" = "green",   # Actual=Yes, Predicted=No
+               "Yes.Yes" = "blue")   # Actual=Yes, Predicted=Yes
+
+# Combine Actual and Predicted into a new column for discrete color mapping
+conf_matrix_df$ColorKey <- paste(conf_matrix_df$Actual, conf_matrix_df$Predicted, sep = ".")
+
+# Convert Actual and Predicted to "Yes" and "No" for better readability
+conf_matrix_df$Actual <- factor(conf_matrix_df$Actual, levels = c(0, 1), labels = c("No", "Yes"))
+conf_matrix_df$Predicted <- factor(conf_matrix_df$Predicted, levels = c(0, 1), labels = c("No", "Yes"))
+
+# Debugging: Check the unique values of ColorKey to confirm
+print(unique(conf_matrix_df$ColorKey))  # Debugging step
+
+# Convert ColorKey to a factor with levels in the same order as in color_map
+conf_matrix_df$ColorKey <- factor(conf_matrix_df$ColorKey, levels = names(color_map))
+
+# Debugging: Check the levels of ColorKey after conversion
+print(levels(conf_matrix_df$ColorKey))  # Debugging step
+
+# Plot the confusion matrix using ggplot2 with 4 different colors
+ggplot(conf_matrix_df, aes(x = Actual, y = Predicted, fill = ColorKey)) +
+  geom_tile() +
+  geom_text(aes(label = Count), vjust = 1) + 
+  scale_fill_manual(values = color_map) +
+  labs(title = "Confusion Matrix - Random Forest", x = "Actual", y = "Predicted") +
+  theme_minimal()
+```

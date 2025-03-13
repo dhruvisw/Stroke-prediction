@@ -18,3 +18,9 @@ Deploy the predictive model in a user-friendly format to support clinical decisi
 
 📁 Dataset
 Publicly available stroke dataset including features like age, hypertension, heart disease, smoking status, BMI, etc.
+
+References:
+https://www.coursera.org/projects/showcase-build-and-deploy-a-stroke-prediction-model-with-r
+https://www.geeksforgeeks.org/random-forest-approach-for-classification-in-r-programming/
+https://rpubs.com/Michael_Zhang/851701
+https://rpubs.com/AnggyTriputra/916269

@@ -1,10 +1,17 @@
 # Stroke-prediction
 
-This project focuses on predicting the likelihood of a stroke in patients based on various clinical and demographic features. The goal is to assist healthcare providers in identifying high-risk individuals and improving early intervention strategies.
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
 
 🔍 Key Learning Objectives
 - Data Exploration:
 Analyze and visualize the dataset to identify the most important patient and clinical characteristics associated with stroke risk.
+
+- Data Visualization
+Conduct thorough EDA to understand patterns and trends in the dataset. Key visualizations include:
+Gender v/s Stroke
+Residence Type v/s Stroke
+Average glucose level v/s Stroke and more
 
 - Model Development:
 Build and validate a robust stroke prediction model using machine learning techniques in R, ensuring strong performance and generalizability.
